@@ -2,39 +2,44 @@
 // Licensed under the MIT License.
 
 #include <CameraApi.h>
-#include <rmw/qos_profiles.h>
 
+// ROS
+#include <camera_info_manager/camera_info_manager.hpp>
 #include <image_transport/image_transport.hpp>
 #include <rclcpp/rclcpp.hpp>
 #include <sensor_msgs/msg/camera_info.hpp>
-#include <sensor_msgs/msg/detail/camera_info__struct.hpp>
 #include <sensor_msgs/msg/image.hpp>
+
+// C++ system
+#include <memory>
 #include <string>
 #include <thread>
+#include <vector>
 
 namespace mindvision_camera
 {
 class MVCameraNode : public rclcpp::Node
 {
 public:
-  MVCameraNode(const rclcpp::NodeOptions & options) : Node("MVCamera", options)
+  explicit MVCameraNode(const rclcpp::NodeOptions & options) : Node("MVCamera", options)
   {
     RCLCPP_INFO(this->get_logger(), "Starting MVCameraNode!");
 
     int i_camera_counts = 1;
     int i_status = -1;
     tSdkCameraDevInfo t_camera_enum_list;
-    tSdkCameraCapbility t_capability;  //设备描述信息
+    tSdkCameraCapbility t_capability;  // 设备描述信息
 
     CameraSdkInit(1);
 
     // 枚举设备，并建立设备列表
     i_status = CameraEnumerateDevice(&t_camera_enum_list, &i_camera_counts);
-    RCLCPP_INFO(this->get_logger(), "state = %d\n", i_status);
+    RCLCPP_INFO(this->get_logger(), "Enumerate state = %d", i_status);
+    RCLCPP_INFO(this->get_logger(), "Found camera count = %d", i_camera_counts);
 
-    RCLCPP_INFO(this->get_logger(), "count = %d\n", i_camera_counts);
     // 没有连接设备
     if (i_camera_counts == 0) {
+      RCLCPP_ERROR(this->get_logger(), "No camera found!");
       return;
     }
 
@@ -42,8 +47,9 @@ public:
     i_status = CameraInit(&t_camera_enum_list, -1, -1, &h_camera_);
 
     // 初始化失败
-    printf("state = %d\n", i_status);
+    RCLCPP_INFO(this->get_logger(), "Init state = %d", i_status);
     if (i_status != CAMERA_STATUS_SUCCESS) {
+      RCLCPP_ERROR(this->get_logger(), "Init failed!");
       return;
     }
 
@@ -60,18 +66,33 @@ public:
 
     CameraSetIspOutFormat(h_camera_, CAMERA_MEDIA_TYPE_BGR8);
 
-    camera_name_ = this->declare_parameter("camera_name", "MVCamera");
-    camera_pub_ =
-      image_transport::create_camera_publisher(this, camera_name_, rmw_qos_profile_sensor_data);
+    // Create camera publisher
+    bool use_sensor_data_qos = this->declare_parameter("use_sensor_data_qos", false);
+    auto qos = use_sensor_data_qos ? rmw_qos_profile_sensor_data : rmw_qos_profile_default;
+    camera_pub_ = image_transport::create_camera_publisher(this, "image_raw", qos);
+
+    // Load camera info
+    camera_name_ = this->declare_parameter("camera_name", "mv_camera");
+    camera_info_manager_ =
+      std::make_shared<camera_info_manager::CameraInfoManager>(this, camera_name_);
+    auto camera_info_url = this->declare_parameter(
+      "camera_info_url", "package://mindvision_camera/config/camera_info.yaml");
+    if (camera_info_manager_->validateURL(camera_info_url)) {
+      camera_info_manager_->loadCameraInfo(camera_info_url);
+      camera_info_msg_ = camera_info_manager_->getCameraInfo();
+    } else {
+      RCLCPP_WARN(get_logger(), "Invalid camera info URL: %s", camera_info_url.c_str());
+    }
 
     capture_thread_ = std::thread{[this]() -> void {
+      RCLCPP_INFO(this->get_logger(), "Publishing image!");
       while (rclcpp::ok()) {
         if (
           CameraGetImageBuffer(h_camera_, &s_frame_info_, &pby_buffer_, 1000) ==
           CAMERA_STATUS_SUCCESS) {
           CameraImageProcess(h_camera_, pby_buffer_, g_pRgbBuffer, &s_frame_info_);
 
-          image_msg_.header.stamp = this->now();
+          camera_info_msg_.header.stamp = image_msg_.header.stamp = this->now();
           image_msg_.encoding = "rgb8";
           image_msg_.height = s_frame_info_.iHeight;
           image_msg_.width = s_frame_info_.iWidth;
@@ -99,6 +120,8 @@ private:
   std::string camera_name_;
   image_transport::CameraPublisher camera_pub_;
   sensor_msgs::msg::Image image_msg_;
+
+  std::shared_ptr<camera_info_manager::CameraInfoManager> camera_info_manager_;
   sensor_msgs::msg::CameraInfo camera_info_msg_;
 
   std::thread capture_thread_;
