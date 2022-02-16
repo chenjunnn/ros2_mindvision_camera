@@ -1,0 +1,19 @@
+name: Build and Test (Galactic)
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Setup ROS 2
+        uses: ros-tooling/setup-ros@v0.2
+        with:
+          required-ros-distributions: galactic
+      - name: Build ros2_mindvision_camera
+        uses: ros-tooling/action-ros-ci@v0.2
+        with:
+          package-name: mindvision_camera
+          target-ros2-distro: galactic

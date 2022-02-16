@@ -6,9 +6,7 @@
 
 // ROS
 #include <camera_info_manager/camera_info_manager.hpp>
-#include <functional>
 #include <image_transport/image_transport.hpp>
-#include <iostream>
 #include <rclcpp/logging.hpp>
 #include <rclcpp/rclcpp.hpp>
 #include <sensor_msgs/msg/camera_info.hpp>
