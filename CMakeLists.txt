@@ -23,6 +23,8 @@ ament_auto_find_build_dependencies()
 ament_auto_add_library(${PROJECT_NAME} SHARED
   src/mv_camera_node.cpp
 )
+target_include_directories(${PROJECT_NAME} PUBLIC mvsdk/include)
+target_link_directories(${PROJECT_NAME} PUBLIC mvsdk/lib)
 target_link_libraries(${PROJECT_NAME} MVSDK)
 
 rclcpp_components_register_node(${PROJECT_NAME}
@@ -38,11 +40,19 @@ if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
   list(APPEND AMENT_LINT_AUTO_EXCLUDE
     ament_cmake_copyright
+    ament_cmake_cpplint
     ament_cmake_uncrustify
   )
   ament_lint_auto_find_test_dependencies()
 
-  find_package(ament_cmake_gtest)
+  set(_linter_excludes
+    mvsdk/include/CameraApi.h
+    mvsdk/include/CameraDefine.h
+    mvsdk/include/CameraStatus.h
+  )
+  ament_cpplint(EXCLUDE ${_linter_excludes})
+
+  # find_package(ament_cmake_gtest)
   # set(TEST_NAME test_kalman_filter)
   # ament_add_gtest(${TEST_NAME} test/${TEST_NAME}.cpp)
   # target_link_libraries(${TEST_NAME} ${PROJECT_NAME})

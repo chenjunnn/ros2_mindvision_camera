@@ -74,14 +74,14 @@ public:
     // Load camera info
     camera_name_ = this->declare_parameter("camera_name", "mv_camera");
     camera_info_manager_ =
-      std::make_shared<camera_info_manager::CameraInfoManager>(this, camera_name_);
+      std::make_unique<camera_info_manager::CameraInfoManager>(this, camera_name_);
     auto camera_info_url = this->declare_parameter(
       "camera_info_url", "package://mindvision_camera/config/camera_info.yaml");
     if (camera_info_manager_->validateURL(camera_info_url)) {
       camera_info_manager_->loadCameraInfo(camera_info_url);
       camera_info_msg_ = camera_info_manager_->getCameraInfo();
     } else {
-      RCLCPP_WARN(get_logger(), "Invalid camera info URL: %s", camera_info_url.c_str());
+      RCLCPP_WARN(this->get_logger(), "Invalid camera info URL: %s", camera_info_url.c_str());
     }
 
     capture_thread_ = std::thread{[this]() -> void {
@@ -111,17 +111,27 @@ public:
     }};
   }
 
-private:
-  uint8_t * g_pRgbBuffer;  // 处理后数据缓存区
-  int h_camera_;
-  tSdkFrameHead s_frame_info_;
-  BYTE * pby_buffer_;
+  ~MVCameraNode() override
+  {
+    if (capture_thread_.joinable()) {
+      capture_thread_.join();
+    }
 
-  std::string camera_name_;
+    CameraUnInit(h_camera_);
+    free(g_pRgbBuffer);
+  }
+
+private:
+  int h_camera_;
+  uint8_t * pby_buffer_;
+  uint8_t * g_pRgbBuffer;  // 处理后数据缓存区
+  tSdkFrameHead s_frame_info_;
+
   image_transport::CameraPublisher camera_pub_;
   sensor_msgs::msg::Image image_msg_;
 
-  std::shared_ptr<camera_info_manager::CameraInfoManager> camera_info_manager_;
+  std::string camera_name_;
+  std::unique_ptr<camera_info_manager::CameraInfoManager> camera_info_manager_;
   sensor_msgs::msg::CameraInfo camera_info_msg_;
 
   std::thread capture_thread_;
