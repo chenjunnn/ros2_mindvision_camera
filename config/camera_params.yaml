@@ -1,0 +1,9 @@
+/MVCamera:
+  ros__parameters:
+    camera_info_url: package://mindvision_camera/config/camera_info.yaml
+    camera_name: mv_camera
+
+    analog_gain: 40
+    exposure_time: 10000
+    
+    use_sensor_data_qos: false

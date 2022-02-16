@@ -1,11 +1,15 @@
 // Copyright (c) 2022 ChenJun
 // Licensed under the MIT License.
 
+// MindVision Camera SDK
 #include <CameraApi.h>
 
 // ROS
 #include <camera_info_manager/camera_info_manager.hpp>
+#include <functional>
 #include <image_transport/image_transport.hpp>
+#include <iostream>
+#include <rclcpp/logging.hpp>
 #include <rclcpp/rclcpp.hpp>
 #include <sensor_msgs/msg/camera_info.hpp>
 #include <sensor_msgs/msg/image.hpp>
@@ -25,14 +29,12 @@ public:
   {
     RCLCPP_INFO(this->get_logger(), "Starting MVCameraNode!");
 
-    int i_camera_counts = 1;
-    int i_status = -1;
-    tSdkCameraDevInfo t_camera_enum_list;
-    tSdkCameraCapbility t_capability;  // 设备描述信息
-
     CameraSdkInit(1);
 
     // 枚举设备，并建立设备列表
+    int i_camera_counts = 1;
+    int i_status = -1;
+    tSdkCameraDevInfo t_camera_enum_list;
     i_status = CameraEnumerateDevice(&t_camera_enum_list, &i_camera_counts);
     RCLCPP_INFO(this->get_logger(), "Enumerate state = %d", i_status);
     RCLCPP_INFO(this->get_logger(), "Found camera count = %d", i_camera_counts);
@@ -54,17 +56,50 @@ public:
     }
 
     // 获得相机的特性描述结构体。该结构体中包含了相机可设置的各种参数的范围信息。决定了相关函数的参数
+    tSdkCameraCapbility t_capability;  // 设备描述信息
     CameraGetCapability(h_camera_, &t_capability);
 
     g_pRgbBuffer = (unsigned char *)malloc(
       t_capability.sResolutionRange.iHeightMax * t_capability.sResolutionRange.iWidthMax * 3);
+
+    // 设置手动曝光
+    CameraSetAeState(h_camera_, false);
+
+    // Exposure time
+    rcl_interfaces::msg::ParameterDescriptor param_desc;
+    param_desc.description = "Exposure time in microseconds";
+    param_desc.integer_range.resize(1);
+    param_desc.integer_range[0].step = 1;
+
+    double exposure_line_time;
+    CameraGetExposureLineTime(h_camera_, &exposure_line_time);
+    param_desc.integer_range[0].from_value =
+      t_capability.sExposeDesc.uiExposeTimeMin * exposure_line_time;
+    param_desc.integer_range[0].to_value =
+      t_capability.sExposeDesc.uiExposeTimeMax * exposure_line_time;
+
+    double exposure_time = this->declare_parameter("exposure_time", 5000, param_desc);
+    CameraSetExposureTime(h_camera_, exposure_time);
+    RCLCPP_INFO(this->get_logger(), "Exposure time = %f", exposure_time);
+
+    // Analog gain
+    param_desc.description = "Analog gain";
+    param_desc.integer_range[0].from_value = t_capability.sExposeDesc.uiAnalogGainMin;
+    param_desc.integer_range[0].to_value = t_capability.sExposeDesc.uiAnalogGainMax;
+    int analog_gain = this->declare_parameter("analog_gain", 16, param_desc);
+    CameraSetAnalogGain(h_camera_, analog_gain);
+    RCLCPP_INFO(this->get_logger(), "Analog gain = %d", analog_gain);
+
+    // Add callback handle to the set parameter event
+    params_callback_handle_ = this->add_on_set_parameters_callback(
+      std::bind(&MVCameraNode::parametersCallback, this, std::placeholders::_1));
 
     // 让SDK进入工作模式，开始接收来自相机发送的图像
     // 数据。如果当前相机是触发模式，则需要接收到
     // 触发帧以后才会更新图像。
     CameraPlay(h_camera_);
 
-    CameraSetIspOutFormat(h_camera_, CAMERA_MEDIA_TYPE_BGR8);
+    CameraSetIspOutFormat(h_camera_, CAMERA_MEDIA_TYPE_RGB8);
 
     // Create camera publisher
     bool use_sensor_data_qos = this->declare_parameter("use_sensor_data_qos", false);
@@ -135,6 +170,31 @@ private:
   sensor_msgs::msg::CameraInfo camera_info_msg_;
 
   std::thread capture_thread_;
+
+  OnSetParametersCallbackHandle::SharedPtr params_callback_handle_;
+
+  rcl_interfaces::msg::SetParametersResult parametersCallback(
+    const std::vector<rclcpp::Parameter> & parameters)
+  {
+    rcl_interfaces::msg::SetParametersResult result;
+    result.successful = true;
+    for (const auto & param : parameters) {
+      if (param.get_name() == "exposure_time") {
+        int status = CameraSetExposureTime(h_camera_, param.as_int());
+        if (status != CAMERA_STATUS_SUCCESS) {
+          result.successful = false;
+          result.reason = "Failed to set exposure time, status = " + std::to_string(status);
+        }
+      } else if (param.get_name() == "analog_gain") {
+        int status = CameraSetAnalogGain(h_camera_, param.as_int());
+        if (status != CAMERA_STATUS_SUCCESS) {
+          result.successful = false;
+          result.reason = "Failed to set analog gain, status = " + std::to_string(status);
+        }
+      }
+    }
+    return result;
+  }
 };
 
 }  // namespace mindvision_camera
