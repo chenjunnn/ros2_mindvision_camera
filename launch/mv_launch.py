@@ -18,4 +18,11 @@ def generate_launch_description():
         # arguments=['--ros-args', '--log-level', 'DEBUG'],
     )
 
-    return LaunchDescription([mv_camera_node])
+    tf_publisher = Node(
+        package='tf2_ros',
+        executable='static_transform_publisher',
+        arguments=['0', '0', '0', '-0.5', '0.5', '-0.5', '0.5',
+                   'camera_frame', 'camera_optical_frame'],
+    )
+
+    return LaunchDescription([mv_camera_node, tf_publisher])

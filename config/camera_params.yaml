@@ -6,4 +6,4 @@
     analog_gain: 40
     exposure_time: 10000
     
-    use_sensor_data_qos: false
+    use_sensor_data_qos: true

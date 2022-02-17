@@ -117,6 +117,9 @@ public:
       RCLCPP_WARN(this->get_logger(), "Invalid camera info URL: %s", camera_info_url.c_str());
     }
 
+    image_msg_.header.frame_id = "camera_optical_frame";
+    image_msg_.encoding = "rgb8";
+
     capture_thread_ = std::thread{[this]() -> void {
       RCLCPP_INFO(this->get_logger(), "Publishing image!");
       while (rclcpp::ok()) {
@@ -126,7 +129,6 @@ public:
           CameraImageProcess(h_camera_, pby_buffer_, g_pRgbBuffer, &s_frame_info_);
 
           camera_info_msg_.header.stamp = image_msg_.header.stamp = this->now();
-          image_msg_.encoding = "rgb8";
           image_msg_.height = s_frame_info_.iHeight;
           image_msg_.width = s_frame_info_.iWidth;
           image_msg_.step = s_frame_info_.iWidth * 3;
