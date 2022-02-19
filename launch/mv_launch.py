@@ -1,3 +1,4 @@
+from cmath import e
 import os
 
 from ament_index_python.packages import get_package_share_directory
@@ -13,16 +14,15 @@ def generate_launch_description():
         package='mindvision_camera',
         executable='mindvision_camera_node',
         output='screen',
+        emulate_tty=True,
         parameters=[config],
-        # Uncomment this line to change log level to DEBUG
-        # arguments=['--ros-args', '--log-level', 'DEBUG'],
     )
 
     tf_publisher = Node(
         package='tf2_ros',
         executable='static_transform_publisher',
         arguments=['0', '0', '0', '-0.5', '0.5', '-0.5', '0.5',
-                   'camera_frame', 'camera_optical_frame'],
+                   'camera_base_link', 'camera_optical_frame'],
     )
 
     return LaunchDescription([mv_camera_node, tf_publisher])

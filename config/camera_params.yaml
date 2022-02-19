@@ -3,7 +3,13 @@
     camera_info_url: package://mindvision_camera/config/camera_info.yaml
     camera_name: mv_camera
 
-    analog_gain: 40
-    exposure_time: 10000
+    analog_gain: 32
+    exposure_time: 8000
+    saturation: 110
+
+    rgb_gain:
+      b: 110
+      g: 95
+      r: 120
     
     use_sensor_data_qos: true
