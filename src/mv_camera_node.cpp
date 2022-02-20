@@ -193,6 +193,13 @@ private:
     int saturation = this->declare_parameter("saturation", 100, param_desc);
     CameraSetSaturation(h_camera_, saturation);
     RCLCPP_INFO(this->get_logger(), "Saturation = %d", saturation);
+
+    // Gamma
+    param_desc.integer_range[0].from_value = t_capability_.sGammaRange.iMin;
+    param_desc.integer_range[0].to_value = t_capability_.sGammaRange.iMax;
+    int gamma = this->declare_parameter("gamma", 100, param_desc);
+    CameraSetGamma(h_camera_, gamma);
+    RCLCPP_INFO(this->get_logger(), "Gamma = %d", gamma);
   }
 
   rcl_interfaces::msg::SetParametersResult parametersCallback(
@@ -239,6 +246,13 @@ private:
         if (status != CAMERA_STATUS_SUCCESS) {
           result.successful = false;
           result.reason = "Failed to set saturation, status = " + std::to_string(status);
+        }
+      } else if (param.get_name() == "gamma") {
+        int gamma = param.as_int();
+        int status = CameraSetGamma(h_camera_, gamma);
+        if (status != CAMERA_STATUS_SUCCESS) {
+          result.successful = false;
+          result.reason = "Failed to set Gamma, status = " + std::to_string(status);
         }
       } else {
         result.successful = false;

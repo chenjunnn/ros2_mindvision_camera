@@ -12,5 +12,6 @@
       r: 135
 
     saturation: 100
+    gamma: 100
 
     use_sensor_data_qos: true
