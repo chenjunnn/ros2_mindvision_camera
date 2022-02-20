@@ -23,7 +23,7 @@ namespace mindvision_camera
 class MVCameraNode : public rclcpp::Node
 {
 public:
-  explicit MVCameraNode(const rclcpp::NodeOptions & options) : Node("MVCamera", options)
+  explicit MVCameraNode(const rclcpp::NodeOptions & options) : Node("mv_camera", options)
   {
     RCLCPP_INFO(this->get_logger(), "Starting MVCameraNode!");
 
