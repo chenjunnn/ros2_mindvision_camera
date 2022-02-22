@@ -16,8 +16,8 @@ def generate_launch_description():
         executable='mindvision_camera_node',
         output='screen',
         emulate_tty=True,
-        parameters=[params_file],
-        arguments=['--ros-args', '-p', 'use_sensor_data_qos:=false'],
+        parameters=[params_file,
+                    {'use_sensor_data_qos': False}],
     )
 
     # Using command because
@@ -32,10 +32,10 @@ def generate_launch_description():
     )
 
     return LaunchDescription([
-        DeclareLaunchArgument(
-            name='size', default_value='7x9'),
-        DeclareLaunchArgument(
-            name='square', default_value='0.20'),
+        DeclareLaunchArgument(name='size',
+                              default_value='7x9'),
+        DeclareLaunchArgument(name='square',
+                              default_value='0.20'),
         mv_camera_node,
         calibrator
     ])
