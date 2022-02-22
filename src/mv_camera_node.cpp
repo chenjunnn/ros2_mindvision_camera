@@ -135,6 +135,8 @@ public:
 
     CameraUnInit(h_camera_);
     free(g_pRgbBuffer);
+
+    RCLCPP_INFO(this->get_logger(), "Camera node destroyed!");
   }
 
 private:
@@ -161,7 +163,9 @@ private:
     param_desc.description = "Analog gain";
     param_desc.integer_range[0].from_value = t_capability_.sExposeDesc.uiAnalogGainMin;
     param_desc.integer_range[0].to_value = t_capability_.sExposeDesc.uiAnalogGainMax;
-    int analog_gain = this->declare_parameter("analog_gain", 16, param_desc);
+    int analog_gain;
+    CameraGetAnalogGain(h_camera_, &analog_gain);
+    analog_gain = this->declare_parameter("analog_gain", analog_gain, param_desc);
     CameraSetAnalogGain(h_camera_, analog_gain);
     RCLCPP_INFO(this->get_logger(), "Analog gain = %d", analog_gain);
 
@@ -190,14 +194,18 @@ private:
     param_desc.description = "Saturation";
     param_desc.integer_range[0].from_value = t_capability_.sSaturationRange.iMin;
     param_desc.integer_range[0].to_value = t_capability_.sSaturationRange.iMax;
-    int saturation = this->declare_parameter("saturation", 100, param_desc);
+    int saturation;
+    CameraGetSaturation(h_camera_, &saturation);
+    saturation = this->declare_parameter("saturation", saturation, param_desc);
     CameraSetSaturation(h_camera_, saturation);
     RCLCPP_INFO(this->get_logger(), "Saturation = %d", saturation);
 
     // Gamma
     param_desc.integer_range[0].from_value = t_capability_.sGammaRange.iMin;
     param_desc.integer_range[0].to_value = t_capability_.sGammaRange.iMax;
-    int gamma = this->declare_parameter("gamma", 100, param_desc);
+    int gamma;
+    CameraGetGamma(h_camera_, &gamma);
+    gamma = this->declare_parameter("gamma", gamma, param_desc);
     CameraSetGamma(h_camera_, gamma);
     RCLCPP_INFO(this->get_logger(), "Gamma = %d", gamma);
   }
