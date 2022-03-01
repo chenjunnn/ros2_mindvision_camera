@@ -13,24 +13,6 @@ def generate_launch_description():
 
     camera_info_url = 'package://mindvision_camera/config/camera_info.yaml'
 
-    mv_camera_node = Node(
-        package='mindvision_camera',
-        executable='mindvision_camera_node',
-        output='screen',
-        emulate_tty=True,
-        parameters=[LaunchConfiguration('params_file'), {
-            'camera_info_url': LaunchConfiguration('camera_info_url'),
-            'use_sensor_data_qos': LaunchConfiguration('use_sensor_data_qos'),
-        }],
-    )
-
-    tf_publisher = Node(
-        package='tf2_ros',
-        executable='static_transform_publisher',
-        arguments=['0', '0', '0', '-0.5', '0.5', '-0.5', '0.5',
-                   'camera_base_link', 'camera_optical_frame'],
-    )
-
     return LaunchDescription([
         DeclareLaunchArgument(name='params_file',
                               default_value=params_file),
@@ -38,6 +20,14 @@ def generate_launch_description():
                               default_value=camera_info_url),
         DeclareLaunchArgument(name='use_sensor_data_qos',
                               default_value='false'),
-        mv_camera_node,
-        tf_publisher
+        Node(
+            package='mindvision_camera',
+            executable='mindvision_camera_node',
+            output='screen',
+            emulate_tty=True,
+            parameters=[LaunchConfiguration('params_file'), {
+                'camera_info_url': LaunchConfiguration('camera_info_url'),
+                'use_sensor_data_qos': LaunchConfiguration('use_sensor_data_qos'),
+            }],
+        )
     ])
