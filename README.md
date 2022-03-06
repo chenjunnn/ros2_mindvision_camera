@@ -35,9 +35,9 @@ To build from source, clone the latest version from this repository into your co
 
 我在 `88-mvusb.rules` 中仅收录了我所使用的相机，如果你的相机不在该列表中，可以手动添加
 
-1. 通过 lsusb 查看设备 id
+示例：
 
-    示例：
+1. 通过 lsusb 查看设备 id
 
         Bus 002 Device 002: ID f622:d13a MindVision SUA134GC
 
@@ -49,7 +49,7 @@ To build from source, clone the latest version from this repository into your co
 
         SUBSYSTEMS=="usb", ATTRS{idVendor}=="f622", ATTRS{idProduct}=="d13a", MODE:="0666", GROUP:="plugdev"
 
-    欢迎通过 Pull Request 更新 `88-mvusb.rules`
+欢迎通过 Pull Request 更新 `88-mvusb.rules`
 
 ### 标定
 
