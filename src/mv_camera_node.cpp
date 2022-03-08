@@ -108,7 +108,9 @@ public:
           CameraGetImageBuffer(h_camera_, &s_frame_info_, &pby_buffer_, 1000) ==
           CAMERA_STATUS_SUCCESS) {
           CameraImageProcess(h_camera_, pby_buffer_, g_pRgbBuffer, &s_frame_info_);
-
+          if (flip_image_) {
+            CameraFlipFrameBuffer(g_pRgbBuffer, &s_frame_info_, 3);
+          }
           camera_info_msg_.header.stamp = image_msg.header.stamp = this->now();
           image_msg.height = s_frame_info_.iHeight;
           image_msg.width = s_frame_info_.iWidth;
@@ -208,6 +210,9 @@ private:
     gamma = this->declare_parameter("gamma", gamma, param_desc);
     CameraSetGamma(h_camera_, gamma);
     RCLCPP_INFO(this->get_logger(), "Gamma = %d", gamma);
+
+    // Flip
+    flip_image_ = this->declare_parameter("flip_image", flip_image_);
   }
 
   rcl_interfaces::msg::SetParametersResult parametersCallback(
@@ -262,6 +267,8 @@ private:
           result.successful = false;
           result.reason = "Failed to set Gamma, status = " + std::to_string(status);
         }
+      } else if (param.get_name() == "flip_image") {
+        flip_image_ = param.as_bool();
       } else {
         result.successful = false;
         result.reason = "Unknown parameter: " + param.get_name();
@@ -280,6 +287,8 @@ private:
 
   // RGB Gain
   int r_gain_, g_gain_, b_gain_;
+
+  bool flip_image_;
 
   std::string camera_name_;
   std::unique_ptr<camera_info_manager::CameraInfoManager> camera_info_manager_;
