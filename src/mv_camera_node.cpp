@@ -208,7 +208,7 @@ private:
     RCLCPP_INFO(this->get_logger(), "Gamma = %d", gamma);
 
     // Flip
-    flip_image_ = this->declare_parameter("flip_image", flip_image_);
+    flip_image_ = this->declare_parameter("flip_image", false);
   }
 
   rcl_interfaces::msg::SetParametersResult parametersCallback(
