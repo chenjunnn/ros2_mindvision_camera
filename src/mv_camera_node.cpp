@@ -56,9 +56,6 @@ public:
     // 获得相机的特性描述结构体。该结构体中包含了相机可设置的各种参数的范围信息。决定了相关函数的参数
     CameraGetCapability(h_camera_, &t_capability_);
 
-    g_pRgbBuffer = (unsigned char *)malloc(
-      t_capability_.sResolutionRange.iHeightMax * t_capability_.sResolutionRange.iWidthMax * 3);
-
     // 设置手动曝光
     CameraSetAeState(h_camera_, false);
 
@@ -102,21 +99,21 @@ public:
       sensor_msgs::msg::Image image_msg;
       image_msg.header.frame_id = "camera_optical_frame";
       image_msg.encoding = "rgb8";
+      // 直接使用vector的内存作为CameraImageProcess的输出buffer
+      image_msg.data.resize(s_frame_info_.iWidth * s_frame_info_.iHeight * 3);
 
       while (rclcpp::ok()) {
         if (
           CameraGetImageBuffer(h_camera_, &s_frame_info_, &pby_buffer_, 1000) ==
           CAMERA_STATUS_SUCCESS) {
-          CameraImageProcess(h_camera_, pby_buffer_, g_pRgbBuffer, &s_frame_info_);
+          CameraImageProcess(h_camera_, pby_buffer_, image_msg.data.data(), &s_frame_info_);
           if (flip_image_) {
-            CameraFlipFrameBuffer(g_pRgbBuffer, &s_frame_info_, 3);
+            CameraFlipFrameBuffer(image_msg.data.data(), &s_frame_info_, 3);
           }
           camera_info_msg_.header.stamp = image_msg.header.stamp = this->now();
           image_msg.height = s_frame_info_.iHeight;
           image_msg.width = s_frame_info_.iWidth;
           image_msg.step = s_frame_info_.iWidth * 3;
-          image_msg.data = std::vector<uint8_t>(
-            g_pRgbBuffer, g_pRgbBuffer + s_frame_info_.iWidth * s_frame_info_.iHeight * 3);
 
           camera_pub_.publish(image_msg, camera_info_msg_);
 
@@ -136,7 +133,6 @@ public:
     }
 
     CameraUnInit(h_camera_);
-    free(g_pRgbBuffer);
 
     RCLCPP_INFO(this->get_logger(), "Camera node destroyed!");
   }
@@ -279,7 +275,6 @@ private:
 
   int h_camera_;
   uint8_t * pby_buffer_;
-  uint8_t * g_pRgbBuffer;             // 处理后数据缓存区
   tSdkCameraCapbility t_capability_;  // 设备描述信息
   tSdkFrameHead s_frame_info_;        // 图像帧头信息
 
