@@ -56,6 +56,10 @@ public:
     // 获得相机的特性描述结构体。该结构体中包含了相机可设置的各种参数的范围信息。决定了相关函数的参数
     CameraGetCapability(h_camera_, &t_capability_);
 
+    // 直接使用vector的内存作为相机输出buffer
+    image_msg_.data.reserve(
+      t_capability_.sResolutionRange.iHeightMax * t_capability_.sResolutionRange.iWidthMax * 3);
+
     // 设置手动曝光
     CameraSetAeState(h_camera_, false);
 
@@ -96,26 +100,24 @@ public:
     capture_thread_ = std::thread{[this]() -> void {
       RCLCPP_INFO(this->get_logger(), "Publishing image!");
 
-      sensor_msgs::msg::Image image_msg;
-      image_msg.header.frame_id = "camera_optical_frame";
-      image_msg.encoding = "rgb8";
-      // 直接使用vector的内存作为CameraImageProcess的输出buffer
-      image_msg.data.resize(s_frame_info_.iWidth * s_frame_info_.iHeight * 3);
+      image_msg_.header.frame_id = "camera_optical_frame";
+      image_msg_.encoding = "rgb8";
 
       while (rclcpp::ok()) {
         if (
           CameraGetImageBuffer(h_camera_, &s_frame_info_, &pby_buffer_, 1000) ==
           CAMERA_STATUS_SUCCESS) {
-          CameraImageProcess(h_camera_, pby_buffer_, image_msg.data.data(), &s_frame_info_);
+          CameraImageProcess(h_camera_, pby_buffer_, image_msg_.data.data(), &s_frame_info_);
           if (flip_image_) {
-            CameraFlipFrameBuffer(image_msg.data.data(), &s_frame_info_, 3);
+            CameraFlipFrameBuffer(image_msg_.data.data(), &s_frame_info_, 3);
           }
-          camera_info_msg_.header.stamp = image_msg.header.stamp = this->now();
-          image_msg.height = s_frame_info_.iHeight;
-          image_msg.width = s_frame_info_.iWidth;
-          image_msg.step = s_frame_info_.iWidth * 3;
+          camera_info_msg_.header.stamp = image_msg_.header.stamp = this->now();
+          image_msg_.height = s_frame_info_.iHeight;
+          image_msg_.width = s_frame_info_.iWidth;
+          image_msg_.step = s_frame_info_.iWidth * 3;
+          image_msg_.data.resize(s_frame_info_.iWidth * s_frame_info_.iHeight * 3);
 
-          camera_pub_.publish(image_msg, camera_info_msg_);
+          camera_pub_.publish(image_msg_, camera_info_msg_);
 
           // 在成功调用CameraGetImageBuffer后，必须调用CameraReleaseImageBuffer来释放获得的buffer。
           // 否则再次调用CameraGetImageBuffer时，程序将被挂起一直阻塞，
@@ -277,6 +279,8 @@ private:
   uint8_t * pby_buffer_;
   tSdkCameraCapbility t_capability_;  // 设备描述信息
   tSdkFrameHead s_frame_info_;        // 图像帧头信息
+
+  sensor_msgs::msg::Image image_msg_;
 
   image_transport::CameraPublisher camera_pub_;
 
