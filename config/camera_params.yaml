@@ -2,13 +2,10 @@
   ros__parameters:
     camera_name: mv_camera
 
-    analog_gain: 32
-    exposure_time: 6000
+    # analog_gain: 32
+    # exposure_time: 6000
 
-    rgb_gain:
-      b: 120
-      g: 110
-      r: 135
-
-    saturation: 100
-    gamma: 100
+    # rgb_gain:
+    #   b: 120
+    #   g: 110
+    #   r: 135
