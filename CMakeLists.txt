@@ -24,7 +24,15 @@ ament_auto_add_library(${PROJECT_NAME} SHARED
   src/mv_camera_node.cpp
 )
 target_include_directories(${PROJECT_NAME} PUBLIC mvsdk/include)
-target_link_directories(${PROJECT_NAME} PUBLIC mvsdk/lib)
+
+if(CMAKE_SYSTEM_PROCESSOR MATCHES "x86_64")
+  target_link_directories(${PROJECT_NAME} PUBLIC mvsdk/lib/amd64)
+elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "arm")
+  target_link_directories(${PROJECT_NAME} PUBLIC mvsdk/lib/arm64)
+else()
+  message(FATAL_ERROR "Unsupport host system architecture: ${CMAKE_HOST_SYSTEM_PROCESSOR}!")
+endif()
+
 target_link_libraries(${PROJECT_NAME} MVSDK)
 
 rclcpp_components_register_node(${PROJECT_NAME}
@@ -51,16 +59,11 @@ if(BUILD_TESTING)
     mvsdk/include/CameraStatus.h
   )
   ament_cpplint(EXCLUDE ${_linter_excludes})
-
-  # find_package(ament_cmake_gtest)
-  # set(TEST_NAME test_kalman_filter)
-  # ament_add_gtest(${TEST_NAME} test/${TEST_NAME}.cpp)
-  # target_link_libraries(${TEST_NAME} ${PROJECT_NAME})
 endif()
 
-#############
-## Install ##
-#############
+# ############
+# # Install ##
+# ############
 
 ament_auto_package(
   INSTALL_TO_SHARE
