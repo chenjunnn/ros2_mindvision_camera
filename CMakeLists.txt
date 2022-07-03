@@ -27,7 +27,7 @@ target_include_directories(${PROJECT_NAME} PUBLIC mvsdk/include)
 
 if(CMAKE_SYSTEM_PROCESSOR MATCHES "x86_64")
   target_link_directories(${PROJECT_NAME} PUBLIC mvsdk/lib/amd64)
-elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "arm")
+elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "aarch64")
   target_link_directories(${PROJECT_NAME} PUBLIC mvsdk/lib/arm64)
 else()
   message(FATAL_ERROR "Unsupport host system architecture: ${CMAKE_HOST_SYSTEM_PROCESSOR}!")
