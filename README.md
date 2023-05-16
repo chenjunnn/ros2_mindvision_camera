@@ -2,7 +2,7 @@
 
 ROS2 MindVision 相机包，提供了 MindVision 相机的 ROS API。
 
-Only tested under Ubuntu 20.04 with ROS2 Galactic
+Only tested under Ubuntu 22.04 with ROS2 Humble
 
 ![Build Status](https://github.com/chenjunnn/ros2_mindvision_camera/actions/workflows/ros_ci.yml/badge.svg)
 
@@ -12,7 +12,7 @@ Only tested under Ubuntu 20.04 with ROS2 Galactic
 
 #### Dependencies
 
-- [Robot Operating System 2 (ROS2)](https://docs.ros.org/en/galactic/) (middleware for robotics),
+- [Robot Operating System 2 (ROS2)](https://docs.ros.org/en/humble/) (middleware for robotics),
 
 #### Building
 

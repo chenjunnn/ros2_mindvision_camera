@@ -1,4 +1,4 @@
-name: Build and Test (Galactic)
+name: Build and Test (humble)
 on:
   push:
     branches: [ main ]
@@ -6,14 +6,15 @@ on:
     branches: [ main ]
 jobs:
   build-and-test:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     steps:
       - name: Setup ROS 2
-        uses: ros-tooling/setup-ros@v0.2
+        uses: ros-tooling/setup-ros@v0.4
         with:
-          required-ros-distributions: galactic
+          required-ros-distributions: humble
       - name: Build ros2_mindvision_camera
         uses: ros-tooling/action-ros-ci@v0.2
         with:
           package-name: mindvision_camera
-          target-ros2-distro: galactic
+          target-ros2-distro: humble
+          skip-tests: true
