@@ -104,9 +104,8 @@ public:
       image_msg_.encoding = "rgb8";
 
       while (rclcpp::ok()) {
-        if (
-          CameraGetImageBuffer(h_camera_, &s_frame_info_, &pby_buffer_, 1000) ==
-          CAMERA_STATUS_SUCCESS) {
+        int status = CameraGetImageBuffer(h_camera_, &s_frame_info_, &pby_buffer_, 1000);
+        if (status == CAMERA_STATUS_SUCCESS) {
           CameraImageProcess(h_camera_, pby_buffer_, image_msg_.data.data(), &s_frame_info_);
           if (flip_image_) {
             CameraFlipFrameBuffer(image_msg_.data.data(), &s_frame_info_, 3);
@@ -123,6 +122,15 @@ public:
           // 否则再次调用CameraGetImageBuffer时，程序将被挂起一直阻塞，
           // 直到其他线程中调用CameraReleaseImageBuffer来释放了buffer
           CameraReleaseImageBuffer(h_camera_, pby_buffer_);
+          fail_conut_ = 0;
+        } else {
+          RCLCPP_WARN(this->get_logger(), "Failed to get image buffer, status = %d", status);
+          fail_conut_++;
+        }
+
+        if (fail_conut_ > 5) {
+          RCLCPP_FATAL(this->get_logger(), "Failed to get image buffer, exit!");
+          rclcpp::shutdown();
         }
       }
     }};
@@ -293,6 +301,7 @@ private:
   std::unique_ptr<camera_info_manager::CameraInfoManager> camera_info_manager_;
   sensor_msgs::msg::CameraInfo camera_info_msg_;
 
+  int fail_conut_ = 0;
   std::thread capture_thread_;
 
   OnSetParametersCallbackHandle::SharedPtr params_callback_handle_;
